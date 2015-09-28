@@ -188,10 +188,6 @@ const wchar_t* DataManager::GetCounterName(int code) {
 		return unknown_string;
 	return csit->second;
 }
-
-const wchar_t* DataManager::GetNumString(int num) {
-	return numStrings[num];
-}
 const unsigned int DataManager::GetSetcode(wchar_t* name) {
 	auto csit = _setcodeStrings.find(name);
 	if (csit == _setcodeStrings.end())
@@ -205,6 +201,16 @@ const std::vector<wchar_t*> DataManager::GetSetcodeList() {
         it != _setcodeStrings.end(); ++it)
 			keys.push_back(it->first);
 	return keys;
+}
+const wchar_t* DataManager::GetNumString(int num, bool bracket) {
+	if(!bracket)
+		return numStrings[num];
+	wchar_t* p = numBuffer;
+	*p++ = L'(';
+	BufferIO::CopyWStrRef(numStrings[num], p, 4);
+	*p = L')';
+	*++p = 0;
+	return numBuffer;
 }
 const wchar_t* DataManager::FormatLocation(int location, int sequence) {
 	if(location == 0x8) {

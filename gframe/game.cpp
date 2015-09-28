@@ -10,12 +10,14 @@
 #include "single_mode.h"
 #include <sstream>
 
-#ifndef WIN32
+#ifdef _WIN32
+#include <io.h>
+#else
 #include <sys/types.h>
 #include <dirent.h>
 #endif
 
-const unsigned short PRO_VERSION = 0x1334;
+const unsigned short PRO_VERSION = 0x1336;
 
 namespace ygo {
 
@@ -84,6 +86,39 @@ bool Game::Initialize() {
 		return false;
 	if(!dataManager.LoadStrings("strings.conf"))
 		return false;
+#ifdef _WIN32
+	char fpath[1000];
+	WIN32_FIND_DATAW fdataw;
+	HANDLE fh = FindFirstFileW(L"./expansions/*.cdb", &fdataw);
+	if(fh != INVALID_HANDLE_VALUE) {
+		do {
+			if(!(fdataw.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+				sprintf(fpath, "./expansions/%ls", fdataw.cFileName);
+				dataManager.LoadDB(fpath);
+			}
+		} while(FindNextFileW(fh, &fdataw));
+		FindClose(fh);
+	}
+#else
+        DIR * dir;
+        struct dirent * dirp;
+        const char *foldername = "./expansions/";
+        if((dir = opendir(foldername)) != NULL) {
+	        while((dirp = readdir(dir)) != NULL) {
+		        size_t len = strlen(dirp->d_name);
+		        if(len < 5 || strcasecmp(dirp->d_name + len - 4, ".cdb") != 0)
+			        continue;
+                        char *filepath = (char *)malloc(sizeof(char)*(len + strlen(foldername)));
+                        strncpy(filepath, foldername, strlen(foldername)+1);
+                        strncat(filepath, dirp->d_name, len);
+                        std::cout << "Found file " << filepath << std::endl;
+                        if (!dataManager.LoadDB(filepath))
+	                        std::cout << "Error loading file" << std::endl;
+                        free(filepath);
+	        }
+	        closedir(dir);
+        }
+#endif
 	env = device->getGUIEnvironment();
 	numFont = irr::gui::CGUITTFont::createTTFont(env, gameConf.numfont, 16);
 	adFont = irr::gui::CGUITTFont::createTTFont(env, gameConf.numfont, 12);
@@ -145,7 +180,7 @@ bool Game::Initialize() {
 	ebJoinPort = env->addEditBox(gameConf.lastport, rect<s32>(260, 355, 320, 380), true, wLanWindow);
 	ebJoinPort->setTextAlignment(irr::gui::EGUIA_CENTER, irr::gui::EGUIA_CENTER);
 	env->addStaticText(dataManager.GetSysString(1222), rect<s32>(10, 390, 220, 410), false, false, wLanWindow);
-	ebJoinPass = env->addEditBox(gameConf.roompass, rect<s32>(110, 385, 250, 410), true, wLanWindow);
+	ebJoinPass = env->addEditBox(gameConf.roompass, rect<s32>(110, 385, 320, 410), true, wLanWindow);
 	ebJoinPass->setTextAlignment(irr::gui::EGUIA_CENTER, irr::gui::EGUIA_CENTER);
 	btnJoinHost = env->addButton(rect<s32>(460, 355, 570, 380), wLanWindow, BUTTON_JOIN_HOST, dataManager.GetSysString(1223));
 	btnJoinCancel = env->addButton(rect<s32>(460, 385, 570, 410), wLanWindow, BUTTON_JOIN_CANCEL, dataManager.GetSysString(1212));
@@ -371,6 +406,19 @@ bool Game::Initialize() {
 	}
 	scrCardList = env->addScrollBar(true, rect<s32>(30, 235, 650, 255), wCardSelect, SCROLL_CARD_SELECT);
 	btnSelectOK = env->addButton(rect<s32>(300, 265, 380, 290), wCardSelect, BUTTON_CARD_SEL_OK, dataManager.GetSysString(1211));
+	//card display
+	wCardDisplay = env->addWindow(rect<s32>(320, 100, 1000, 400), false, L"");
+	wCardDisplay->getCloseButton()->setVisible(false);
+	wCardDisplay->setVisible(false);
+	for(int i = 0; i < 5; ++i) {
+		stDisplayPos[i] = env->addStaticText(L"", rect<s32>(40 + 125 * i, 30, 139 + 125 * i, 50), true, false, wCardDisplay, -1, true);
+		stDisplayPos[i]->setBackgroundColor(0xffffffff);
+		stDisplayPos[i]->setTextAlignment(irr::gui::EGUIA_CENTER, irr::gui::EGUIA_CENTER);
+		btnCardDisplay[i] = irr::gui::CGUIImageButton::addImageButton(env, rect<s32>(30 + 125 * i, 55, 150 + 125 * i, 225), wCardDisplay, BUTTON_DISPLAY_0 + i);
+		btnCardDisplay[i]->setImageScale(core::vector2df(0.6f, 0.6f));
+	}
+	scrDisplayList = env->addScrollBar(true, rect<s32>(30, 235, 650, 255), wCardDisplay, SCROLL_CARD_DISPLAY);
+	btnDisplayOK = env->addButton(rect<s32>(300, 265, 380, 290), wCardDisplay, BUTTON_CARD_DISP_OK, dataManager.GetSysString(1211));
 	//announce number
 	wANNumber = env->addWindow(rect<s32>(550, 200, 780, 295), false, L"");
 	wANNumber->getCloseButton()->setVisible(false);
@@ -453,7 +501,7 @@ bool Game::Initialize() {
 	cbCardType->addItem(dataManager.GetSysString(1312));
 	cbCardType->addItem(dataManager.GetSysString(1313));
 	cbCardType->addItem(dataManager.GetSysString(1314));
-	cbCardType2 = env->addComboBox(rect<s32>(130, 3, 190, 23), wFilter, -1);
+	cbCardType2 = env->addComboBox(rect<s32>(125, 3, 200, 23), wFilter, -1);
 	cbCardType2->addItem(dataManager.GetSysString(1310), 0);
 	stLabel4 = env->addStaticText(dataManager.GetSysString(1315), rect<s32>(205, 5, 280, 25), false, false, wFilter);
 	cbLimit = env->addComboBox(rect<s32>(260, 3, 390, 23), wFilter, -1);
@@ -1038,10 +1086,12 @@ void Game::ShowCardInfo(int code) {
 			myswprintf(&formatBuffer[cd.level + 3], L"%d/%d", cd.attack, cd.defence);
 		if(cd.type & TYPE_PENDULUM) {
 			wchar_t scaleBuffer[16];
-			myswprintf(scaleBuffer, L" %d/%d", cd.lscale, cd.rscale);
+			myswprintf(scaleBuffer, L"   %d/%d", cd.lscale, cd.rscale);
 			wcscat(formatBuffer, scaleBuffer);
 		}
 		stDataInfo->setText(formatBuffer);
+		stText->setRelativePosition(rect<s32>(15, 83, 287, 324));
+		scrCardText->setRelativePosition(rect<s32>(267, 83, 287, 324));
 	} else {
 		myswprintf(formatBuffer, L"[%ls]", dataManager.FormatType(cd.type));
 		stInfo->setText(formatBuffer);
@@ -1098,11 +1148,10 @@ void Game::ClearTextures() {
 	mainGame->imgCard->setImage(0);
 	mainGame->btnPSAU->setImage();
 	mainGame->btnPSDU->setImage();
-	mainGame->btnCardSelect[0]->setImage();
-	mainGame->btnCardSelect[1]->setImage();
-	mainGame->btnCardSelect[2]->setImage();
-	mainGame->btnCardSelect[3]->setImage();
-	mainGame->btnCardSelect[4]->setImage();
+	for(int i=0; i<=4; ++i) {
+		mainGame->btnCardSelect[i]->setImage();
+		mainGame->btnCardDisplay[i]->setImage();
+	}
 	imageManager.ClearTexture();
 }
 void Game::CloseDuelWindow() {
@@ -1117,6 +1166,7 @@ void Game::CloseDuelWindow() {
 	wANRace->setVisible(false);
 	wCardImg->setVisible(false);
 	wCardSelect->setVisible(false);
+	wCardDisplay->setVisible(false);
 	wCmdMenu->setVisible(false);
 	wFTSelect->setVisible(false);
 	wHand->setVisible(false);

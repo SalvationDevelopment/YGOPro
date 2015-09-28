@@ -354,20 +354,20 @@ void TagDuel::TPResult(DuelPlayer* dp, unsigned char tp) {
 	last_replay.WriteData(players[2]->name, 40, false);
 	last_replay.WriteData(players[3]->name, 40, false);
 	if(!host_info.no_shuffle_deck) {
-		for(size_t i = 0; i < pdeck[0].main.size(); ++i) {
-			int swap = rnd.real() * pdeck[0].main.size();
+		for(size_t i = pdeck[0].main.size() - 1; i > 0; --i) {
+			int swap = rnd.real() * (i + 1);
 			std::swap(pdeck[0].main[i], pdeck[0].main[swap]);
 		}
-		for(size_t i = 0; i < pdeck[1].main.size(); ++i) {
-			int swap = rnd.real() * pdeck[1].main.size();
+		for(size_t i = pdeck[1].main.size() - 1; i > 0; --i) {
+			int swap = rnd.real() * (i + 1);
 			std::swap(pdeck[1].main[i], pdeck[1].main[swap]);
 		}
-		for(size_t i = 0; i < pdeck[2].main.size(); ++i) {
-			int swap = rnd.real() * pdeck[2].main.size();
+		for(size_t i = pdeck[2].main.size() - 1; i > 0; --i) {
+			int swap = rnd.real() * (i + 1);
 			std::swap(pdeck[2].main[i], pdeck[2].main[swap]);
 		}
-		for(size_t i = 0; i < pdeck[3].main.size(); ++i) {
-			int swap = rnd.real() * pdeck[3].main.size();
+		for(size_t i = pdeck[3].main.size() - 1; i > 0; --i) {
+			int swap = rnd.real() * (i + 1);
 			std::swap(pdeck[3].main[i], pdeck[3].main[swap]);
 		}
 	}
@@ -1319,12 +1319,19 @@ int TagDuel::Analyze(char* msgbuffer, unsigned int len) {
 		case MSG_TAG_SWAP: {
 			player = BufferIO::ReadInt8(pbuf);
 			/*int mcount = */BufferIO::ReadInt8(pbuf);
-			/*int ecount = */BufferIO::ReadInt8(pbuf);
+			int ecount = BufferIO::ReadInt8(pbuf);
+			/*int pcount = */BufferIO::ReadInt8(pbuf);
 			int hcount = BufferIO::ReadInt8(pbuf);
 			pbufw = pbuf + 4;
-			pbuf += hcount * 4 + 4;
+			pbuf += hcount * 4 + ecount * 4 + 4;
 			NetServer::SendBufferToPlayer(cur_player[player], STOC_GAME_MSG, offset, pbuf - offset);
 			for (int i = 0; i < hcount; ++i) {
+				if(!(pbufw[3] & 0x80))
+					BufferIO::WriteInt32(pbufw, 0);
+				else
+					pbufw += 4;
+			}
+			for (int i = 0; i < ecount; ++i) {
 				if(!(pbufw[3] & 0x80))
 					BufferIO::WriteInt32(pbufw, 0);
 				else
