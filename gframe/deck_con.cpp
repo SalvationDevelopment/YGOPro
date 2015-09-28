@@ -179,16 +179,6 @@ bool DeckBuilder::OnEvent(const irr::SEvent& event) {
 			break;
 			}
 		}
-		case irr::gui::EGET_SCROLL_BAR_CHANGED: {
-			switch(id) {
-			case SCROLL_CARDTEXT: {
-				u32 pos = mainGame->scrCardText->getPos();
-				mainGame->SetStaticText(mainGame->stText, mainGame->stText->getRelativePosition().getWidth()-25, mainGame->textFont, mainGame->showingtext, pos);
-				break;
-			}
-			break;
-			}
-		}
 		case irr::gui::EGET_EDITBOX_ENTER: {
 			switch(id) {
 			case EDITBOX_KEYWORD: {
