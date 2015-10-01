@@ -102,15 +102,18 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				if(mainGame->dInfo.player_type == 7) {
 					DuelClient::StopClient();
 					mainGame->dInfo.isStarted = false;
-					mainGame->device->setEventReceiver(&mainGame->menuHandler);
-					mainGame->wCardImg->setVisible(false);
-					mainGame->wInfos->setVisible(false);
-					mainGame->wPhase->setVisible(false);
-					mainGame->btnLeaveGame->setVisible(false);
-					mainGame->btnCreateHost->setEnabled(true);
-					mainGame->btnJoinHost->setEnabled(true);
-					mainGame->btnJoinCancel->setEnabled(true);
-					mainGame->ShowElement(mainGame->wLanWindow);
+					if (exit_on_return)
+						mainGame->device->closeDevice();
+					else {
+						mainGame->device->setEventReceiver(&mainGame->menuHandler);
+						mainGame->btnCreateHost->setEnabled(true);
+						mainGame->btnJoinHost->setEnabled(true);
+						mainGame->btnJoinCancel->setEnabled(true);
+						if(mainGame->lastMenu == mainGame->wOnlineMenu)
+							mainGame->ShowElement(mainGame->lastMenu);
+						else
+							mainGame->ShowElement(mainGame->wLanWindow);
+					}
 				} else {
 					DuelClient::SendPacketToServer(CTOS_SURRENDER);
 					if(panel)
@@ -494,6 +497,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 					DuelClient::SetResponseI(7);
 					DuelClient::SendResponse();
 				}
+				mainGame->btnShuffle->setVisible(false); //Hide between turns
 				break;
 			}
 			case BUTTON_CARD_0:
@@ -668,6 +672,16 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 		}
 		case irr::gui::EGET_CHECKBOX_CHANGED: {
 			switch(id) {
+			case CHECKBOX_ENABLE_SOUND:{
+				mainGame->gameConf.enablesound = mainGame->chkEnableSound->isChecked();
+				break;
+			}
+			case CHECKBOX_ENABLE_MUSIC:{
+				mainGame->gameConf.enablemusic = mainGame->chkEnableMusic->isChecked();
+				if(!mainGame->gameConf.enablemusic)
+					mainGame->engineMusic->stopAllSounds();
+				break;
+		    }
 			case CHECK_ATTRIBUTE: {
 				int att = 0, filter = 0x1, count = 0;
 				for(int i = 0; i < 7; ++i, filter <<= 1) {
@@ -752,6 +766,16 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				}
 				break;
 			}
+			case SCROLL_SOUND: {
+				mainGame->gameConf.soundvolume = (double)mainGame->scrSound->getPos() /100;
+				mainGame->engineSound->setSoundVolume(mainGame->gameConf.soundvolume);
+				break;
+			}
+			case SCROLL_MUSIC: {
+				mainGame->gameConf.musicvolume = (double)mainGame->scrMusic->getPos() /100;
+				mainGame->engineMusic->setSoundVolume(mainGame->gameConf.musicvolume);
+				break;
+			}
 			case SCROLL_CARD_DISPLAY: {
 				int pos = mainGame->scrDisplayList->getPos() / 10;
 				for(int i = 0; i < 5; ++i) {
@@ -797,7 +821,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 				mainGame->lstANCard->clear();
 				ancard.clear();
 				for(auto cit = dataManager._strings.begin(); cit != dataManager._strings.end(); ++cit) {
-					if(wcsstr(cit->second.name, pname) != 0) {
+					if(DeckBuilder::CardNameCompare(cit->second.name, pname)) {
 						auto cp = dataManager.GetCodePointer(cit->first);
 						if(cp->second.code == 78734254 || cp->second.code == 13857930 
 								|| !cp->second.alias && !((cp->second.type & (TYPE_MONSTER + TYPE_TOKEN)) == (TYPE_MONSTER + TYPE_TOKEN))) {
@@ -908,13 +932,14 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 		case irr::EMIE_LMOUSE_LEFT_UP: {
 			if(!mainGame->dInfo.isStarted)
 				break;
-			s32 x = event.MouseInput.X;
-			s32 y = event.MouseInput.Y;
 			hovered_location = 0;
-			irr::core::position2di pos(x, y);
+			position2di pos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
+			position2di mousepos(event.MouseInput.X, event.MouseInput.Y);
+			s32 x = pos.X;
+			s32 y = pos.Y;
 			if(x < 300)
 				break;
-			if(mainGame->wCmdMenu->isVisible() && !mainGame->wCmdMenu->getRelativePosition().isPointInside(pos))
+			if(mainGame->wCmdMenu->isVisible() && !mainGame->wCmdMenu->getRelativePosition().isPointInside(mousepos))
 				mainGame->wCmdMenu->setVisible(false);
 			if(panel && panel->isVisible())
 				break;
@@ -1391,14 +1416,15 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 		case irr::EMIE_MOUSE_MOVED: {
 			if(!mainGame->dInfo.isStarted)
 				break;
-			s32 x = event.MouseInput.X;
-			s32 y = event.MouseInput.Y;
 			hovered_location = 0;
-			irr::core::position2di pos(x, y);
+			position2di pos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
+			position2di mousepos = position2di(event.MouseInput.X, event.MouseInput.Y);
+			s32 x = pos.X;
+			s32 y = pos.Y;
 			if(x < 300)
 				break;
 			ClientCard* mcard = 0;
-			if(!panel || !panel->isVisible() || !panel->getRelativePosition().isPointInside(pos)) {
+			if(!panel || !panel->isVisible() || !panel->getRelativePosition().isPointInside(mousepos)) {
 				GetHoverField(x, y);
 				if(hovered_location & 0xe)
 					mcard = GetCard(hovered_controler, hovered_location, hovered_sequence);
@@ -1534,7 +1560,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 							}
 							mainGame->stTip->setVisible(true);
 							irr::core::dimension2d<unsigned int> dtip = mainGame->textFont->getDimension(str.c_str());
-							mainGame->stTip->setRelativePosition(recti(x - 10 - dtip.Width, y - 10 - dtip.Height, x, y));
+							mainGame->stTip->setRelativePosition(recti(mousepos.X - 10 - dtip.Width, mousepos.Y - 10 - dtip.Height, mousepos.X, mousepos.Y));
 							mainGame->stTip->setText(str.c_str());
 						}
 					} else {
@@ -1553,7 +1579,7 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 			} else {
 				if(mainGame->stTip->isVisible()) {
 					irr::core::recti tpos = mainGame->stTip->getRelativePosition();
-					mainGame->stTip->setRelativePosition(irr::core::position2di(x - tpos.getWidth() - 10, y - tpos.getHeight() - 10));
+					mainGame->stTip->setRelativePosition(irr::core::position2di(mousepos.X - tpos.getWidth() - 10, mousepos.Y - tpos.getHeight() - 10));
 				}
 			}
 			break;
@@ -1569,7 +1595,18 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 	case irr::EET_KEY_INPUT_EVENT: {
 		switch(event.KeyInput.Key) {
 		case irr::KEY_KEY_A: {
+			if (mainGame->always_chain == event.KeyInput.PressedDown)
+				break;
+
 			mainGame->always_chain = event.KeyInput.PressedDown;
+
+			if (mainGame->dInfo.isSingleMode)
+				break;
+
+			CTOS_HandResult cshr;
+			cshr.res = event.KeyInput.PressedDown;
+			DuelClient::SendPacketToServer(CTOS_FORCE_CHAIN, cshr);
+
 			break;
 		}
 		case irr::KEY_KEY_S: {
@@ -1852,6 +1889,9 @@ void ClientField::ShowMenu(int flag, int x, int y) {
 	} else mainGame->btnShowList->setVisible(false);
 	panel = mainGame->wCmdMenu;
 	mainGame->wCmdMenu->setVisible(true);
+	position2di mouse = mainGame->Resize(x, y);
+	x = mouse.X;
+	y = mouse.Y;
 	mainGame->wCmdMenu->setRelativePosition(irr::core::recti(x - 20 , y - 20 - height, x + 80, y - 20));
 }
 }
