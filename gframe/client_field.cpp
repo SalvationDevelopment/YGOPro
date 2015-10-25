@@ -7,6 +7,7 @@
 #include "../ocgcore/field.h"
 
 namespace ygo {
+using std::min;
 
 ClientField::ClientField() {
 	panel = 0;
@@ -356,7 +357,7 @@ void ClientField::ShowSelectCard(bool buttonok, bool chain) {
 		startpos = 30 + 125 * (5 - selectable_cards.size()) / 2;
 	else
 		startpos = 30;
-	for(size_t i = 0; i < min(selectable_cards.size(), 5); ++i) {
+	for(size_t i = 0; i < min(selectable_cards.size(), 5u); ++i) {
 		mainGame->stCardPos[i]->enableOverrideColor(false);
 		if(selectable_cards[i]->code)
 			mainGame->imageLoading.insert(std::make_pair(mainGame->btnCardSelect[i], selectable_cards[i]->code));
@@ -425,7 +426,7 @@ void ClientField::ShowChainCard() {
 		startpos = 30 + 125 * (5 - selectable_cards.size()) / 2;
 	else
 		startpos = 30;
-	for(size_t i = 0; i < min(selectable_cards.size(), 5); ++i) {
+	for(size_t i = 0; i < min(selectable_cards.size(), 5u); ++i) {
 		if(selectable_cards[i]->code)
 			mainGame->imageLoading.insert(std::make_pair(mainGame->btnCardSelect[i], selectable_cards[i]->code));
 		else
@@ -476,7 +477,7 @@ void ClientField::ShowLocationCard() {
 		startpos = 30 + 125 * (5 - display_cards.size()) / 2;
 	else
 		startpos = 30;
-	for(size_t i = 0; i < min(display_cards.size(), 5); ++i) {
+	for(size_t i = 0; i < min(display_cards.size(), 5u); ++i) {
 		mainGame->stDisplayPos[i]->enableOverrideColor(false);
 		if(display_cards[i]->code)
 			mainGame->imageLoading.insert(std::make_pair(mainGame->btnCardDisplay[i], display_cards[i]->code));
