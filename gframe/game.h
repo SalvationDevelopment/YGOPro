@@ -23,11 +23,11 @@ struct Config {
 	wchar_t lastip[20];
 	wchar_t lastport[10];
 	wchar_t nickname[20];
-	wchar_t gamename[20];
+	wchar_t gamename[30];
 	wchar_t lastdeck[64];
 	wchar_t textfont[256];
 	wchar_t numfont[256];
-	wchar_t roompass[20];
+	wchar_t roompass[30];
 };
 
 struct DuelInfo {
