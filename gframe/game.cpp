@@ -834,7 +834,7 @@ void Game::LoadConfig() {
 			BufferIO::CopyWStr(wstr, gameConf.lastport, 20);
 		} else if(!strcmp(strbuf, "roompass")) {
 			BufferIO::DecodeUTF8(valbuf, wstr);
-			BufferIO::CopyWStr(wstr, gameConf.roompass, 20);
+			BufferIO::CopyWStr(wstr, gameConf.roompass, 30);
 		} else {
 			// options allowing multiple words
 			sscanf(linebuf, "%s = %99[^\n]", strbuf, valbuf);
@@ -843,7 +843,7 @@ void Game::LoadConfig() {
 				BufferIO::CopyWStr(wstr, gameConf.nickname, 20);
 			} else if(!strcmp(strbuf, "gamename")) {
 				BufferIO::DecodeUTF8(valbuf, wstr);
-				BufferIO::CopyWStr(wstr, gameConf.gamename, 20);
+				BufferIO::CopyWStr(wstr, gameConf.gamename, 30);
 			} else if(!strcmp(strbuf, "lastdeck")) {
 				BufferIO::DecodeUTF8(valbuf, wstr);
 				BufferIO::CopyWStr(wstr, gameConf.lastdeck, 64);
