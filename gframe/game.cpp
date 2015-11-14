@@ -17,7 +17,7 @@
 #include <dirent.h>
 #endif
 
-const unsigned short PRO_VERSION = 0x1336;
+const unsigned short PRO_VERSION = 0x1337;
 
 namespace ygo {
 
@@ -933,7 +933,7 @@ void Game::LoadConfig() {
 	int fsize = ftell(fp);
 	fseek(fp, 0, SEEK_SET);
 	while(ftell(fp) < fsize) {
-		fgets(linebuf, 250, fp);
+		fgets(linebuf, 256, fp);
 		sscanf(linebuf, "%s = %99[^\n]", strbuf, valbuf);
 		if(!strcmp(strbuf, "antialias")) {
 			gameConf.antialias = atoi(valbuf);
@@ -941,15 +941,6 @@ void Game::LoadConfig() {
 			gameConf.use_d3d = atoi(valbuf) > 0;
 		} else if(!strcmp(strbuf, "errorlog")) {
 			enable_log = atoi(valbuf);
-		} else if(!strcmp(strbuf, "nickname")) {
-			BufferIO::DecodeUTF8(valbuf, wstr);
-			BufferIO::CopyWStr(wstr, gameConf.nickname, 20);
-		} else if(!strcmp(strbuf, "gamename")) {
-			BufferIO::DecodeUTF8(valbuf, wstr);
-			BufferIO::CopyWStr(wstr, gameConf.gamename, 20);
-		} else if(!strcmp(strbuf, "lastdeck")) {
-			BufferIO::DecodeUTF8(valbuf, wstr);
-			BufferIO::CopyWStr(wstr, gameConf.lastdeck, 64);
 		} else if(!strcmp(strbuf, "textfont")) {
 			sscanf(linebuf, "%s = %s", strbuf, valbuf);
 			BufferIO::DecodeUTF8(valbuf, wstr);
@@ -1013,6 +1004,21 @@ void Game::LoadConfig() {
 		} else if(!strcmp(strbuf,"thumbnails")) {
 			BufferIO::DecodeUTF8(valbuf, wstr);
 			BufferIO::CopyWStr(wstr, gameConf.thumbnails, 256);
+		} else {
+			// options allowing multiple words
+			sscanf(linebuf, "%s = %240[^\n]", strbuf, valbuf);
+			if (!strcmp(strbuf, "nickname")) {
+				BufferIO::DecodeUTF8(valbuf, wstr);
+				BufferIO::CopyWStr(wstr, gameConf.nickname, 20);
+			}
+			else if (!strcmp(strbuf, "gamename")) {
+				BufferIO::DecodeUTF8(valbuf, wstr);
+				BufferIO::CopyWStr(wstr, gameConf.gamename, 20);
+			}
+			else if (!strcmp(strbuf, "lastdeck")) {
+				BufferIO::DecodeUTF8(valbuf, wstr);
+				BufferIO::CopyWStr(wstr, gameConf.lastdeck, 64);
+			}
 		}
 	}
 	fclose(fp);
