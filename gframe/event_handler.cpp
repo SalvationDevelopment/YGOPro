@@ -971,11 +971,11 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 		case irr::EMIE_LMOUSE_LEFT_UP: {
 			if(!mainGame->dInfo.isStarted)
 				break;
-			hovered_location = 0;
-			position2di pos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
 			position2di mousepos(event.MouseInput.X, event.MouseInput.Y);
-			s32 x = pos.X;
-			s32 y = pos.Y;
+			position2di gamepos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
+			s32 x = gamepos.X;
+			s32 y = gamepos.Y;
+			hovered_location = 0;
 			if(x < 300)
 				break;
 			if(mainGame->wCmdMenu->isVisible() && !mainGame->wCmdMenu->getRelativePosition().isPointInside(mousepos))
@@ -1476,11 +1476,11 @@ bool ClientField::OnEvent(const irr::SEvent& event) {
 		case irr::EMIE_MOUSE_MOVED: {
 			if(!mainGame->dInfo.isStarted)
 				break;
+			position2di mousepos(event.MouseInput.X, event.MouseInput.Y);
+			position2di gamepos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
+			s32 x = gamepos.X;
+			s32 y = gamepos.Y;
 			hovered_location = 0;
-			position2di pos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
-			position2di mousepos = position2di(event.MouseInput.X, event.MouseInput.Y);
-			s32 x = pos.X;
-			s32 y = pos.Y;
 			if(x < 300)
 				break;
 			ClientCard* mcard = 0;
@@ -1970,9 +1970,8 @@ void ClientField::ShowMenu(int flag, int x, int y) {
 	} else mainGame->btnShowList->setVisible(false);
 	panel = mainGame->wCmdMenu;
 	mainGame->wCmdMenu->setVisible(true);
-	position2di mouse = mainGame->Resize(x, y);
-	x = mouse.X;
-	y = mouse.Y;
-	mainGame->wCmdMenu->setRelativePosition(irr::core::recti(x - 20 , y - 20 - height, x + 80, y - 20));
+
+	position2di pos = mainGame->Resize(x, y);
+	mainGame->wCmdMenu->setRelativePosition(irr::core::recti(pos.X - 20 , pos.Y - 20 - height, pos.X + 80, pos.Y - 20));
 }
 }

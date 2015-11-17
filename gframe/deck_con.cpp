@@ -519,10 +519,9 @@ bool DeckBuilder::OnEvent(const irr::SEvent& event) {
 			break;
 		}
 		case irr::EMIE_MOUSE_MOVED: {
-			position2di pos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
-			position2di mousepos(event.MouseInput.X, event.MouseInput.Y);
-			s32 x = pos.X;
-			s32 y = pos.Y;
+			position2di gamepos = mainGame->Resize(event.MouseInput.X, event.MouseInput.Y, true);
+			int x = gamepos.X;
+			int y = gamepos.Y;
 			int pre_code = hovered_code;
 			if(x >= 314 && x <= 794 && y >= 164 && y <= 435) {
 				int lx = 10, px, py = (y - 164) / 68;
@@ -581,8 +580,8 @@ bool DeckBuilder::OnEvent(const irr::SEvent& event) {
 				hovered_code = 0;
 			}
 			if(is_draging) {
-				dragx = mousepos.X;
-				dragy = mousepos.Y;
+				dragx = gamepos.X;
+				dragy = gamepos.Y;
 			}
 			if(!is_draging && pre_code != hovered_code) {
 				if(hovered_code) {
