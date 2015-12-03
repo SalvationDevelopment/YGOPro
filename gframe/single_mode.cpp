@@ -161,7 +161,7 @@ bool SingleMode::SinglePlayAnalyze(char* msg, unsigned int len) {
 			count = BufferIO::ReadInt8(pbuf);
 			pbuf += count * 7;
 			count = BufferIO::ReadInt8(pbuf);
-			pbuf += count * 11 + 2;
+			pbuf += count * 11 + 3;
 			SinglePlayRefresh();
 			if(!DuelClient::ClientAnalyze(offset, pbuf - offset)) {
 				mainGame->singleSignal.Reset();
@@ -598,7 +598,7 @@ bool SingleMode::SinglePlayAnalyze(char* msg, unsigned int len) {
 		}
 		case MSG_TAG_SWAP: {
 			player = pbuf[0];
-			pbuf += pbuf[3] * 4 + 8;
+			pbuf += pbuf[2] * 4 + pbuf[4] * 4 + 9;
 			DuelClient::ClientAnalyze(offset, pbuf - offset);
 			SinglePlayRefreshDeck(player);
 			SinglePlayRefreshExtra(player);
@@ -667,6 +667,8 @@ bool SingleMode::SinglePlayAnalyze(char* msg, unsigned int len) {
 					ClientCard* ccard = new ClientCard;
 					mainGame->dField.AddCard(ccard, p, LOCATION_EXTRA, seq);
 				}
+				val = BufferIO::ReadInt8(pbuf);
+				mainGame->dField.extra_p_count[p] = val;
 			}
 			BufferIO::ReadInt8(pbuf); //chain count, always 0
 			SinglePlayReload();

@@ -1,4 +1,5 @@
 #include "image_manager.h"
+#include "game.h"
 
 namespace ygo {
 
@@ -23,9 +24,7 @@ bool ImageManager::Initial() {
 	tHand[1] = driver->getTexture("textures/f2.jpg");
 	tHand[2] = driver->getTexture("textures/f3.jpg");
 	tBackGround = driver->getTexture("textures/bg.jpg");
-	tBackGround2 = driver->getTexture("textures/bg2.jpg"); 
 	tField = driver->getTexture("textures/field2.png");
-	tFieldTransparent = driver->getTexture("textures/field-transparent.png");
 	return true;
 }
 void ImageManager::SetDevice(irr::IrrlichtDevice* dev) {
@@ -61,7 +60,7 @@ irr::video::ITexture* ImageManager::GetTexture(int code) {
 	auto tit = tMap.find(code);
 	if(tit == tMap.end()) {
 		char file[256];
-		sprintf(file, "pics/%d.jpg", code);
+		sprintf(file, "%s/%d.jpg",mainGame->gameConf.pics, code);
 		irr::video::ITexture* img = driver->getTexture(file);
 		if(img == NULL) {
 			tMap[code] = NULL;
@@ -83,7 +82,7 @@ irr::video::ITexture* ImageManager::GetTextureThumb(int code) {
 	auto tit = tThumb.find(code);
 	if(tit == tThumb.end()) {
 		char file[256];
-		sprintf(file, "pics/thumbnail/%d.jpg", code);
+		sprintf(file, "%s/%d.jpg",mainGame->gameConf.thumbnails, code);
 		irr::video::ITexture* img = driver->getTexture(file);
 		if(img == NULL) {
 			tThumb[code] = NULL;
