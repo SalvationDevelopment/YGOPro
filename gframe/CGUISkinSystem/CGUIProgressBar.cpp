@@ -70,17 +70,6 @@ f32 CGUIProgressBar::getProgress() const
 
 void CGUIProgressBar::draw()
 {
-    CImageGUISkin* skin = static_cast<CImageGUISkin*>( Environment->getSkin() );
-	// Madoc added these changes to let the progress bar get its fill colors from the skin
-	if(bindColorsToSkin) {
-		EmptyColor = ((gui::SImageGUISkinConfig)skin->getConfig()).ProgressBar.Color;
-		FillColor  = ((gui::SImageGUISkinConfig)skin->getConfig()).ProgressBarFilled.Color;
-	}
-	// End Madoc changes
-    skin->drawHorizontalProgressBar( this, AbsoluteRect, &AbsoluteClippingRect, FilledRatio, FillColor, EmptyColor );
-
-    // Draw text in center
-	skin->getFont(EGDF_DEFAULT)->draw( Text.c_str(), AbsoluteRect, skin->getColor(EGDC_BUTTON_TEXT), true, true, &AbsoluteClippingRect );
 }
 
 }

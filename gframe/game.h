@@ -12,17 +12,21 @@
 #pragma comment(lib, "irrKlang.lib")
 #include "CGUISkinSystem/CGUISkinSystem.h"
 
+class CGUISkinSystem;
+
 namespace ygo {
 
 struct Config {
 	bool use_d3d;
+	bool allow_resize;
 	unsigned short antialias;
 	unsigned short serverport;
 	unsigned char textfontsize;
+	int skin_index;
 	wchar_t lastip[20];
 	wchar_t lastport[10];
 	wchar_t nickname[20];
-	wchar_t gamename[20];
+	wchar_t gamename[30];
 	wchar_t lastdeck[64];
 	wchar_t textfont[256];
 	wchar_t numfont[256];
@@ -37,10 +41,13 @@ struct Config {
 	double soundvolume;
 	bool enablemusic;
 	double musicvolume;
-	int skin_index;
 	bool fullscreen;
 	wchar_t servername[30];
 	wchar_t serverip[20];
+	bool forced;
+	char database[256];
+	char pics[256];
+	char thumbnails[256];
 };
 
 struct DuelInfo {
@@ -87,7 +94,7 @@ public:
 	void MainLoop();
 	void BuildProjectionMatrix(irr::core::matrix4& mProjection, f32 left, f32 right, f32 bottom, f32 top, f32 znear, f32 zfar);
 	void InitStaticText(irr::gui::IGUIStaticText* pControl, u32 cWidth, u32 cHeight, irr::gui::CGUITTFont* font, const wchar_t* text);
-    void SetStaticText(irr::gui::IGUIStaticText* pControl, u32 cWidth, irr::gui::CGUITTFont* font, const wchar_t* text, u32 pos = 0);
+	void SetStaticText(irr::gui::IGUIStaticText* pControl, u32 cWidth, irr::gui::CGUITTFont* font, const wchar_t* text, u32 pos = 0);
 	void RefreshDeck(irr::gui::IGUIComboBox* cbDeck);
 	void RefreshReplay();
 	void RefreshSingleplay();
@@ -102,7 +109,7 @@ public:
 	void HideElement(irr::gui::IGUIElement* element, bool set_action = false);
 	void PopupElement(irr::gui::IGUIElement* element, int hideframe = 0);
 	void WaitFrameSignal(int frame);
-	void DrawThumb(code_pointer cp, position2di pos, std::unordered_map<int, int>* lflist, bool drag = false);
+	void DrawThumb(code_pointer cp, position2di pos, std::unordered_map<int, int>* lflist, bool is_dragging = false);
 	void DrawDeckBd();
 	void LoadConfig();
 	void SaveConfig();
@@ -115,10 +122,16 @@ public:
 	void DrawRectangle(IVideoDriver *driver, recti position);
 	void DrawShadowA(CGUITTFont *font, const stringw &text, recti position);
 	void DrawShadowB(CGUITTFont *font, const stringw &text, recti position);
+	void LoadSkin();
 
 	int LocalPlayer(int player);
 	const wchar_t* LocalName(int local_player);
 	
+	bool HasFocus(EGUI_ELEMENT_TYPE type) const {
+		irr::gui::IGUIElement* focus = env->getFocus();
+		return focus && focus->hasType(type);
+	}
+
 	void OnResize();
 	recti Resize(s32 x, s32 y, s32 x2, s32 y2);
 	recti Resize(s32 x, s32 y, s32 x2, s32 y2, s32 dx, s32 dy, s32 dx2, s32 dy2);
@@ -141,6 +154,7 @@ public:
 	std::vector<int> logParam;
 	std::wstring chatMsg[8];
 
+	
 	int hideChatTimer;
 	bool hideChat;
 	int chatTiming[8];
@@ -170,17 +184,17 @@ public:
 	bool is_building;
 	bool is_siding;
 
-	irr::core::dimension2d<irr::u32> window_size;
-
-	CGUISkinSystem *skinSystem;
-
 	ClientField dField;
 	DeckBuilder deckBuilder;
 	MenuHandler menuHandler;
+	
 	irr::IrrlichtDevice* device;
 	irr::video::IVideoDriver* driver;
 	irr::scene::ISceneManager* smgr;
 	irr::scene::ICameraSceneNode* camera;
+
+	irr::core::dimension2d<irr::u32> window_size;
+
 	//GUI
 	irr::gui::IGUIEnvironment* env;
 	irr::gui::CGUITTFont* guiFont;
@@ -327,6 +341,12 @@ public:
 	irr::gui::IGUIStaticText *stCardPos[5];
 	irr::gui::IGUIScrollBar *scrCardList;
 	irr::gui::IGUIButton* btnSelectOK;
+	//card display
+	irr::gui::IGUIWindow* wCardDisplay;
+	irr::gui::CGUIImageButton* btnCardDisplay[5];
+	irr::gui::IGUIStaticText *stDisplayPos[5];
+	irr::gui::IGUIScrollBar *scrDisplayList;
+	irr::gui::IGUIButton* btnDisplayOK;
 	//announce number
 	irr::gui::IGUIWindow* wANNumber;
 	irr::gui::IGUIComboBox* cbANNumber;
@@ -352,6 +372,7 @@ public:
 	irr::gui::IGUIButton* btnRepos;
 	irr::gui::IGUIButton* btnAttack;
 	irr::gui::IGUIButton* btnShowList;
+	irr::gui::IGUIButton* btnShuffle;
 	//chat window
 	irr::gui::IGUIWindow* wChat;
 	irr::gui::IGUIListBox* lstChatLog;
@@ -392,6 +413,16 @@ public:
 	irr::gui::IGUIStaticText* stLabel9;
 	irr::gui::IGUIStaticText* stLabel10;
 	irr::gui::IGUIStaticText* stLabel11;
+	irr::gui::IGUIStaticText* stBanlist;
+	irr::gui::IGUIStaticText* stDeck;
+	irr::gui::IGUIStaticText* stCategory;
+	irr::gui::IGUIStaticText* stLimit;
+	irr::gui::IGUIStaticText* stAttribute;
+	irr::gui::IGUIStaticText* stType;
+	irr::gui::IGUIStaticText* stAtk;
+	irr::gui::IGUIStaticText* stDef;
+	irr::gui::IGUIStaticText* stLevel;
+	irr::gui::IGUIStaticText* stSearch;
 	//filter
 	irr::gui::IGUIStaticText* wFilter;
 	irr::gui::IGUIScrollBar* scrFilter;
@@ -427,6 +458,8 @@ public:
 	//soundEngine
 	irrklang::ISoundEngine* engineSound;
 	irrklang::ISoundEngine* engineMusic; 
+
+	CGUISkinSystem* skinSystem;
 };
 
 extern Game* mainGame;
@@ -444,6 +477,7 @@ extern Game* mainGame;
 #define COMMAND_REPOS		0x0020
 #define COMMAND_ATTACK		0x0040
 #define COMMAND_LIST		0x0080
+
 
 #define BUTTON_ONLINE_MODE			99
 #define BUTTON_LAN_MODE				100
@@ -513,8 +547,15 @@ extern Game* mainGame;
 #define BUTTON_CLEAR_LOG			270
 #define LISTBOX_LOG					271
 #define SCROLL_CARDTEXT				280
-#define SCROLL_SOUND				290
-#define SCROLL_MUSIC				291
+#define SCROLL_SOUND				288
+#define SCROLL_MUSIC				289
+#define BUTTON_DISPLAY_0			290
+#define BUTTON_DISPLAY_1			291
+#define BUTTON_DISPLAY_2			292
+#define BUTTON_DISPLAY_3			293
+#define BUTTON_DISPLAY_4			294
+#define SCROLL_CARD_DISPLAY			295
+#define BUTTON_CARD_DISP_OK			296
 #define BUTTON_CATEGORY_OK			300
 #define COMBOBOX_DBLFLIST			301
 #define COMBOBOX_DBDECKS			302
